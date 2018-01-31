@@ -2,11 +2,10 @@ package main
 
 import (
 	"errors"
-	"os"
+	"log"
+	"net"
 	"os/exec"
-	"os/signal"
 	"runtime"
-	"syscall"
 )
 
 func showMsg(msg string) error {
@@ -17,10 +16,25 @@ func showMsg(msg string) error {
 }
 
 func main() {
-	showMsg("hi")
+	laddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:8703")
+	if err != nil {
+		panic(err)
+		return
+	}
+	conn, err := net.ListenUDP("udp", laddr)
+	if err != nil {
+		panic(err)
+		return
+	}
+	log.Printf("listen %s", laddr.String())
 
-	// catchs system signal
-	chSig := make(chan os.Signal)
-	signal.Notify(chSig, syscall.SIGINT, syscall.SIGTERM)
-	<-chSig
+	buf := make([]byte, 1024)
+	for {
+		rlen, remote, err := conn.ReadFromUDP(buf)
+		if err == nil {
+			msg := string(buf[:rlen])
+			log.Printf("msg: %s. from: %s\n", msg, remote.String())
+			showMsg(msg)
+		}
+	}
 }
