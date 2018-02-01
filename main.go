@@ -18,7 +18,7 @@ type Config struct {
 
 func showMsg(msg string) error {
 	if runtime.GOOS == "windows" {
-		return exec.Command("powershell", "msg *", msg).Run()
+		return exec.Command("msg", "*", msg).Run()
 	}
 	return errors.New("Unsupport")
 }
@@ -48,14 +48,15 @@ func main() {
 		panic(err)
 		return
 	}
-	log.Printf("listen %s", laddr.String())
+	// log.Printf("listen %s", laddr.String())
+	showMsg("Server start")
 
 	buf := make([]byte, 1024)
 	for {
-		rlen, remote, err := conn.ReadFromUDP(buf)
+		rlen, _, err := conn.ReadFromUDP(buf)
 		if err == nil {
 			msg := string(buf[:rlen])
-			log.Printf("msg: %s. from: %s\n", msg, remote.String())
+			// log.Printf("msg: %s. from: %s\n", msg, remote.String())
 			if err = showMsg(msg); err != nil {
 				log.Println(err)
 			}
