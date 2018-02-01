@@ -1,12 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os/exec"
 	"runtime"
 )
+
+type Config struct {
+	IP   string `json:"ip"`
+	Port int    `json:"port"`
+}
 
 func showMsg(msg string) error {
 	if runtime.GOOS == "windows" {
@@ -16,7 +24,21 @@ func showMsg(msg string) error {
 }
 
 func main() {
-	laddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:8703")
+	d, err := ioutil.ReadFile("./conf.json")
+	if err != nil {
+		panic(err)
+		return
+	}
+	conf := Config{}
+	if err = json.Unmarshal(d, &conf); err != nil {
+		panic(err)
+		return
+	}
+	if len(conf.IP) == 0 {
+		conf.IP = "0.0.0.0"
+	}
+
+	laddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", conf.IP, conf.Port))
 	if err != nil {
 		panic(err)
 		return
@@ -34,7 +56,9 @@ func main() {
 		if err == nil {
 			msg := string(buf[:rlen])
 			log.Printf("msg: %s. from: %s\n", msg, remote.String())
-			showMsg(msg)
+			if err = showMsg(msg); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
